@@ -10,6 +10,7 @@ import { WinstonModule } from 'nest-winston';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { resolveRedisConnectionUrl } from './redis/resolve-redis-url';
 import { EncryptionModule } from './encryption/encryption.module';
 import { PlaywrightModule } from './playwright/playwright.module';
 import { AiModule } from './ai/ai.module';
@@ -96,9 +97,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const url =
-          (config.get<string>('redis.url') ?? '').trim() ||
-          'redis://127.0.0.1:6379';
+        const url = resolveRedisConnectionUrl(config);
         return {
           connection: {
             url,

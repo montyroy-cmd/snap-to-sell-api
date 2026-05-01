@@ -10,6 +10,7 @@ import { WinstonModule } from 'nest-winston';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { resolveRedisConnectionUrl } from './redis/resolve-redis-url';
 import { EncryptionModule } from './encryption/encryption.module';
 import { PlaywrightModule } from './playwright/playwright.module';
 import { AiModule } from './ai/ai.module';
@@ -90,9 +91,7 @@ import { LISTING_PHOTO_MAX_BYTES } from './config/multer.config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const url =
-          (config.get<string>('redis.url') ?? '').trim() ||
-          'redis://127.0.0.1:6379';
+        const url = resolveRedisConnectionUrl(config);
         return {
           // Without enableOfflineQueue: false, queue.add() can hang forever when Redis
           // is down (commands sit in ioredis's offline queue). Snap-to-list then never

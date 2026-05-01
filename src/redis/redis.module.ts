@@ -1,6 +1,7 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { resolveRedisConnectionUrl } from './resolve-redis-url';
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 
@@ -11,9 +12,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
     {
       provide: REDIS_CLIENT,
       useFactory: (config: ConfigService) => {
-        const url =
-          (config.get<string>('redis.url') ?? '').trim() ||
-          'redis://127.0.0.1:6379';
+        const url = resolveRedisConnectionUrl(config);
         const client = new Redis(url, {
           maxRetriesPerRequest: null,
           connectTimeout: 10_000,

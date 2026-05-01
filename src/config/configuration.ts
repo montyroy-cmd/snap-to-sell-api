@@ -17,8 +17,9 @@ export default () => {
       jwtSecret: process.env.SUPABASE_JWT_SECRET ?? process.env.JWT_SECRET ?? '',
       listingsBucket: process.env.SUPABASE_LISTINGS_BUCKET ?? 'listings',
     },
+    /** Parsed by resolveRedisConnectionUrl — empty uses localhost only outside Vercel. */
     redis: {
-      url: (process.env.REDIS_URL ?? '').trim() || 'redis://127.0.0.1:6379',
+      url: (process.env.REDIS_URL ?? '').trim(),
     },
     cookieEncryptionKeyB64: process.env.COOKIE_ENCRYPTION_KEY ?? '',
     ai: {
