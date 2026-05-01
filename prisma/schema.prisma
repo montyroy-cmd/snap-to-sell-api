@@ -1,0 +1,253 @@
+// Sell Seva / Snap-to-Sell — Supabase PostgreSQL
+// Use DATABASE_URL (pooler) for runtime; DIRECT_URL for migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ProfileRole {
+  seller
+  admin
+}
+
+enum Marketplace {
+  mercari
+  offerup
+  ebay
+  poshmark
+  etsy
+  facebook_marketplace
+}
+
+enum AccountStatus {
+  connected
+  disconnected
+  error
+}
+
+enum ListingMappingStatus {
+  draft
+  active
+  sold
+  delisted
+  error
+}
+
+enum MessageSenderType {
+  buyer
+  seller
+  system
+}
+
+enum OfferStatus {
+  pending
+  sent
+  accepted
+  rejected
+  expired
+}
+
+enum DelistJobType {
+  auto
+  manual
+}
+
+enum DelistJobStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model Profile {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @unique @map("user_id") @db.Uuid
+  fullName  String?     @map("full_name")
+  role      ProfileRole @default(seller)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  marketplaceAccounts SellerMarketplaceAccount[]
+  listings            Listing[]
+  conversations       Conversation[]
+  analyticsEvents     AnalyticsEvent[]
+  offerRules          OfferRule[]
+
+  @@map("profiles")
+}
+
+model SellerMarketplaceAccount {
+  id                   String          @id @default(uuid()) @db.Uuid
+  profileId            String          @map("profile_id") @db.Uuid
+  marketplace          Marketplace
+  encryptedSessionData String          @map("encrypted_session_data")
+  status               AccountStatus   @default(connected)
+  lastSynced           DateTime?       @map("last_synced") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, marketplace])
+  @@index([profileId])
+  @@map("seller_marketplace_accounts")
+}
+
+model Listing {
+  id              String   @id @default(uuid()) @db.Uuid
+  profileId       String   @map("profile_id") @db.Uuid
+  title           String
+  description     String   @default("")
+  suggestedPrice  Decimal? @map("suggested_price") @db.Decimal(12, 2)
+  minPrice        Decimal? @map("min_price") @db.Decimal(12, 2)
+  qtyTotal        Int      @default(1) @map("qty_total")
+  qtyRemaining    Int      @default(1) @map("qty_remaining")
+  itemCondition   String   @default("used") @map("condition")
+  category        String   @default("")
+  aiResearchData  Json?    @map("ai_research_data")
+  // Array of image URLs or { url, sortOrder } objects — stored as PostgreSQL JSONB
+  images          Json     @default("[]") @db.JsonB
+
+  profile          Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  platformMappings ListingPlatformMapping[]
+  conversations    Conversation[]
+  offers           Offer[]
+  sales            Sale[]
+  delistJobs       DelistJob[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([profileId])
+  @@map("listings")
+}
+
+model ListingPlatformMapping {
+  id                String                 @id @default(uuid()) @db.Uuid
+  listingId         String                 @map("listing_id") @db.Uuid
+  marketplace       Marketplace
+  platformListingId String?                @map("platform_listing_id")
+  status            ListingMappingStatus   @default(draft)
+  lastSyncedAt      DateTime?              @map("last_synced_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, marketplace])
+  @@index([listingId])
+  @@map("listing_platform_mappings")
+}
+
+model Conversation {
+  id          String      @id @default(uuid()) @db.Uuid
+  profileId   String      @map("profile_id") @db.Uuid
+  marketplace Marketplace
+  buyerId     String      @map("buyer_id")
+  listingId   String?     @map("listing_id") @db.Uuid
+  unreadCount Int         @default(0) @map("unread_count")
+
+  profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([profileId])
+  @@index([listingId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String            @id @default(uuid()) @db.Uuid
+  conversationId String            @map("conversation_id") @db.Uuid
+  senderType     MessageSenderType @map("sender_type")
+  messageText    String            @map("message_text")
+  isRead         Boolean           @default(false) @map("is_read")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model OfferRule {
+  id               String      @id @default(uuid()) @db.Uuid
+  profileId        String      @map("profile_id") @db.Uuid
+  marketplace      Marketplace
+  discountPercent  Decimal     @map("discount_percent") @db.Decimal(5, 2)
+  minDiscountRule  String      @default("") @map("min_discount_rule")
+  isActive         Boolean     @default(true) @map("is_active")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("offer_rules")
+}
+
+model Offer {
+  id               String        @id @default(uuid()) @db.Uuid
+  listingId        String        @map("listing_id") @db.Uuid
+  marketplace      Marketplace
+  discountPercent  Decimal       @map("discount_percent") @db.Decimal(5, 2)
+  minDiscountRule  String        @default("") @map("min_discount_rule")
+  status           OfferStatus   @default(pending)
+  sentAt           DateTime?     @map("sent_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("offers")
+}
+
+model Sale {
+  id         String      @id @default(uuid()) @db.Uuid
+  listingId  String      @map("listing_id") @db.Uuid
+  marketplace Marketplace
+  qtySold    Int         @default(1) @map("qty_sold")
+  salePrice  Decimal     @map("sale_price") @db.Decimal(12, 2)
+  orderId    String      @map("order_id")
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("sales")
+}
+
+model DelistJob {
+  id          String          @id @default(uuid()) @db.Uuid
+  listingId   String          @map("listing_id") @db.Uuid
+  marketplace Marketplace
+  jobType     DelistJobType   @map("job_type")
+  status      DelistJobStatus @default(pending)
+  retries     Int             @default(0)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([status])
+  @@map("delist_jobs")
+}
+
+model AnalyticsEvent {
+  id          String       @id @default(uuid()) @db.Uuid
+  profileId   String       @map("profile_id") @db.Uuid
+  eventType   String       @map("event_type")
+  marketplace Marketplace?
+  value       Decimal?     @db.Decimal(14, 4)
+  metadata    Json?
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([profileId])
+  @@index([eventType])
+  @@map("analytics_events")
+}

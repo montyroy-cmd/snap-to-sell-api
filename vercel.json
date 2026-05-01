@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 60,
+      "includeFiles": "node_modules/swagger-ui-dist/**"
+    }
+  },
+  "routes": [{ "src": "/(.*)", "dest": "api/index.ts" }]
+}
+

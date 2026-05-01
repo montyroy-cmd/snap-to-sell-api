@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/cceef0a4-8af7-4b64-a7e0-26c5de86159a/resourceGroups/GlamIQ_ResourceGroup/providers/Microsoft.Web/sites/snap-sell-api",
+    "appService.deploySubpath": "."
+}
