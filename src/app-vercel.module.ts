@@ -22,6 +22,7 @@ import { AutoDelistModule } from './auto-delist/auto-delist.module';
 import { OffersModule } from './offers/offers.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ListingAnalyzeModule } from './listing-analyze/listing-analyze.module';
+import { ProductsModule } from './products/products.module';
 import { HealthController } from './health/health.controller';
 import { LISTING_PHOTO_MAX_BYTES } from './config/multer.config';
 import { MessagingHttpModule } from './messaging/messaging-http.module';
@@ -126,6 +127,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     OffersModule,
     AnalyticsModule,
     ListingAnalyzeModule,
+    ProductsModule,
   ],
   controllers: [HealthController],
   providers: [
