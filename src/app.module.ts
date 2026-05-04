@@ -24,6 +24,7 @@ import { OffersModule } from './offers/offers.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WorkersModule } from './workers/workers.module';
 import { ListingAnalyzeModule } from './listing-analyze/listing-analyze.module';
+import { ProductsModule } from './products/products.module';
 import { HealthController } from './health/health.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -125,6 +126,7 @@ import { LISTING_PHOTO_MAX_BYTES } from './config/multer.config';
     AnalyticsModule,
     WorkersModule,
     ListingAnalyzeModule,
+    ProductsModule,
   ],
   controllers: [HealthController],
   providers: [
