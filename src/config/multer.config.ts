@@ -7,6 +7,13 @@ import { memoryStorage } from 'multer';
 /** Max listing photo size (bytes). Kept in sync with MulterModule, ListingsController, main bootstrap. */
 export const LISTING_PHOTO_MAX_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Max JSON body for `POST /api/listing/analyze` (8 base64 photos ≈ 4/3 × raw size each).
+ * Express default (~100kb) rejects typical camera JPEGs and surfaces as a generic 500.
+ */
+export const LISTING_ANALYZE_JSON_MAX_BYTES =
+  Math.ceil(LISTING_PHOTO_MAX_BYTES * 8 * (4 / 3)) + 64 * 1024;
+
 const allowedImageMimes = new Set([
   'image/jpeg',
   'image/jpg',

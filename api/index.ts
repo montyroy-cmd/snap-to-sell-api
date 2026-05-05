@@ -8,7 +8,10 @@ import express from 'express';
 import helmet from 'helmet';
 import * as swaggerUiDist from 'swagger-ui-dist';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { LISTING_PHOTO_MAX_BYTES } from '../src/config/multer.config';
+import {
+  LISTING_ANALYZE_JSON_MAX_BYTES,
+  LISTING_PHOTO_MAX_BYTES,
+} from '../src/config/multer.config';
 import { AppVercelModule } from '../src/app-vercel.module';
 
 let cachedHandler:
@@ -17,10 +20,18 @@ let cachedHandler:
 
 async function buildHandler() {
   const server = express();
+  server.use(express.json({ limit: LISTING_ANALYZE_JSON_MAX_BYTES }));
+  server.use(
+    express.urlencoded({
+      extended: true,
+      limit: LISTING_ANALYZE_JSON_MAX_BYTES,
+    }),
+  );
   const adapter = new ExpressAdapter(server);
 
   const app = await NestFactory.create(AppVercelModule, adapter, {
     bufferLogs: true,
+    bodyParser: false,
   });
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 

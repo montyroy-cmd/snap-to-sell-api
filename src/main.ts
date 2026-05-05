@@ -3,13 +3,27 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import helmet from 'helmet';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { LISTING_PHOTO_MAX_BYTES } from './config/multer.config';
+import {
+  LISTING_ANALYZE_JSON_MAX_BYTES,
+  LISTING_PHOTO_MAX_BYTES,
+} from './config/multer.config';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    bodyParser: false,
+  });
+  app.use(express.json({ limit: LISTING_ANALYZE_JSON_MAX_BYTES }));
+  app.use(
+    express.urlencoded({
+      extended: true,
+      limit: LISTING_ANALYZE_JSON_MAX_BYTES,
+    }),
+  );
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   const config = app.get(ConfigService);

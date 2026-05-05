@@ -105,10 +105,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
       };
     }
 
+    const payloadTooLarge = this.payloadTooLargeStatus(exception);
+    if (payloadTooLarge !== undefined) {
+      return {
+        status: HttpStatus.PAYLOAD_TOO_LARGE,
+        message:
+          'Request body is too large. Use smaller images or fewer photos (listing analyze matches snap-to-list size limits).',
+      };
+    }
+
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
     };
+  }
+
+  /** body-parser / http-errors: not an `HttpException`, previously fell through as generic 500. */
+  private payloadTooLargeStatus(exception: unknown): number | undefined {
+    if (typeof exception !== 'object' || exception === null) return undefined;
+    const e = exception as { statusCode?: number; status?: number; type?: string };
+    if (e.type === 'entity.too.large') return HttpStatus.PAYLOAD_TOO_LARGE;
+    if (e.statusCode === 413 || e.status === 413) return HttpStatus.PAYLOAD_TOO_LARGE;
+    return undefined;
   }
 
   private extractMessage(exception: HttpException): string {
