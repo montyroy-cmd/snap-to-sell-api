@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SupabaseJwtStrategy } from './strategies/supabase-jwt.strategy';
+import { InboxSeedService } from '../messaging/inbox-seed.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { SupabaseJwtStrategy } from './strategies/supabase-jwt.strategy';
     PassportModule.register({ defaultStrategy: 'supabase-jwt' }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, SupabaseJwtStrategy],
+  providers: [AuthService, SupabaseJwtStrategy, InboxSeedService],
   exports: [AuthService],
 })
 export class AuthModule {}

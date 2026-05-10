@@ -6,10 +6,14 @@ import {
 import { Marketplace, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
+import { InboxSeedService } from './inbox-seed.service';
 
 @Injectable()
 export class MessagingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inboxSeed: InboxSeedService,
+  ) {}
 
   private requireProfile(user: AuthUser) {
     if (!user.profile) throw new ForbiddenException('Profile not found');
@@ -18,6 +22,8 @@ export class MessagingService {
 
   async inbox(user: AuthUser, platform?: string) {
     const profile = this.requireProfile(user);
+    await this.inboxSeed.seedIfEmpty(profile.id);
+
     const where: Prisma.ConversationWhereInput = { profileId: profile.id };
     if (platform && platform !== 'all') {
       where.marketplace = platform as Marketplace;

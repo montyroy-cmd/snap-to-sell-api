@@ -5,6 +5,7 @@ import type { Request } from 'express';
 import { Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
+import { InboxSeedService } from '../../messaging/inbox-seed.service';
 
 export type SupabaseJwtPayload = {
   sub: string;
@@ -34,6 +35,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly inboxSeed: InboxSeedService,
   ) {
     const symmetricSecret =
       config.get<string>('supabase.jwtSecret') ||
@@ -66,11 +68,17 @@ export class SupabaseJwtStrategy extends PassportStrategy(
   }
 
   async validate(payload: SupabaseJwtPayload): Promise<AuthUser> {
-    const profile = await this.prisma.profile.findUnique({
+    let profile = await this.prisma.profile.findUnique({
       where: { userId: payload.sub },
     });
     if (!profile) {
       this.logger.debug(`No profile for user ${payload.sub}`);
+      profile = await this.prisma.profile.upsert({
+        where: { userId: payload.sub },
+        create: { userId: payload.sub },
+        update: {},
+      });
+      await this.inboxSeed.seedIfEmpty(profile.id);
     }
     return { userId: payload.sub, email: payload.email, profile };
   }

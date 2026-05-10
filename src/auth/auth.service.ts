@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { AccountStatus, Marketplace, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
+import { InboxSeedService } from '../messaging/inbox-seed.service';
 import { ConnectMarketplaceDto } from './dto/connect-marketplace.dto';
 import { LoginDto } from './dto/login.dto';
 import { SocialAuthDto, SocialProvider } from './dto/social-auth.dto';
@@ -53,6 +54,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly inboxSeed: InboxSeedService,
   ) {}
 
   private supabaseUrl(): string {
@@ -118,7 +120,7 @@ export class AuthService {
       throw new BadRequestException('Unexpected signup response');
     }
     try {
-      await this.prisma.profile.upsert({
+      const profile = await this.prisma.profile.upsert({
         where: { userId },
         create: {
           userId,
@@ -126,6 +128,7 @@ export class AuthService {
         },
         update: { fullName: dto.fullName ?? undefined },
       });
+      await this.inboxSeed.seedIfEmpty(profile.id);
     } catch (e) {
       this.logger.error('Profile upsert after signup failed', e);
       if (isPrismaSchemaOrTableError(e)) {
@@ -163,11 +166,12 @@ export class AuthService {
     const userObj = (body as { user?: { id: string } }).user;
     if (userObj?.id) {
       try {
-        await this.prisma.profile.upsert({
+        const profile = await this.prisma.profile.upsert({
           where: { userId: userObj.id },
           create: { userId: userObj.id },
           update: {},
         });
+        await this.inboxSeed.seedIfEmpty(profile.id);
       } catch (e) {
         this.logger.error('Profile upsert after login failed', e);
         if (isPrismaSchemaOrTableError(e)) {
@@ -243,11 +247,12 @@ export class AuthService {
       const userId = userObj?.id;
       if (userId) {
         try {
-          await this.prisma.profile.upsert({
+          const profile = await this.prisma.profile.upsert({
             where: { userId },
             create: { userId, fullName: dto.fullName ?? null },
             update: { fullName: dto.fullName ?? undefined },
           });
+          await this.inboxSeed.seedIfEmpty(profile.id);
         } catch (e) {
           this.logger.error('Profile upsert after social login failed', e);
           if (isPrismaSchemaOrTableError(e)) {

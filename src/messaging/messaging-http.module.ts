@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MessagingController } from './messaging.controller';
 import { MessagingService } from './messaging.service';
+import { InboxSeedService } from './inbox-seed.service';
 
 /**
  * HTTP-only messaging module (no WebSocket gateway).
@@ -8,7 +9,7 @@ import { MessagingService } from './messaging.service';
  */
 @Module({
   controllers: [MessagingController],
-  providers: [MessagingService],
+  providers: [MessagingService, InboxSeedService],
   exports: [MessagingService],
 })
 export class MessagingHttpModule {}
